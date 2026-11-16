@@ -248,3 +248,34 @@ Finalisasi dan publikasi (16 Nov):
   itu catatan hasil pengukuran yang sudah terjadi. Jangan "merapikan" nama di
   dalamnya tanpa menjalankan ulang pengukurannya.
 - Repo: `https://github.com/Kizter/ArxseusMonitor` (branch `main`).
+
+Akurasi angka dan temuan jaringan (16 Nov, build rilis `12:05:38`):
+
+- Alat: `docs/akurasi.ps1`, bukti `docs/akurasi.md`. Metode: `examples/snapshot.exe`
+  (satu tick per 2 s) dipasangkan dengan `Get-Counter` 2 s; 2 sesi x 4 tick,
+  sampel #1 dibuang → 5 pasangan. Acuan CPU `\Processor(_Total)\% Processor Time`,
+  RAM `(total - Available MBytes)/total`, disk persen kosong C: dari `Get-Volume`.
+  **Jangan** `Group-Object Timestamp` pada `CounterSamples` multi-counter —
+  milidetik tiap counter bisa beda dan satu sampel terpecah dua grup; pakai urutan
+  indeks (0=Processor Time, 1=Utility, 2=Available MBytes).
+- Hasil beban tetap 8 thread: CPU median selisih 0,14 poin (0,3%), RAM 0,2%
+  (maks 1,2%), disk 0,1% → lulus target < 5%. Idle: RAM/disk tetap 0,2%/0,1%,
+  tetapi CPU median 28,1% relatif (2,80 poin absolut) karena kedua nilai kecil
+  (5-13%) dan jendela 2 s tidak identik. Bukti akurasi CPU hanya sah pada beban
+  tetap.
+- Temuan: pada beban yang sama `% Processor Utility` = 82,8% sementara
+  `% Processor Time` dan aplikasi ≈ 52%. Task Manager Win11 menampilkan Utility
+  (berbobot turbo), `sysinfo` memakai Time. Jadi angka CPU aplikasi akan tampak
+  lebih rendah dari Task Manager saat turbo — perbedaan definisi, bukan galat.
+  Angka GUI Task Manager belum dibaca manual (tetap di `DESIGN.md` §13).
+- `docs/jaringan.md`: proses aplikasi 0 koneksi, tetapi runtime WebView2
+  (`msedgewebview2.exe`) membuka 2 koneksi TLS `Established` ke Microsoft
+  (`40.99.x`, `52.98.x`:443, sertifikat `CN=outlook.com`) yang bertahan ≥ 21 s.
+- Percobaan mematikannya **gagal**: 8 flag `--disable-*`/`--no-pings` terpasang
+  (diverifikasi ada di command line proses browser) tetapi jumlah koneksi tetap 2;
+  `--host-resolver-rules` dibuang WebView2. `additionalBrowserArgs` dikembalikan
+  kosong dan build ulang — jangan menambah flag tanpa mengukur ulang jumlah
+  koneksi. Konfigurasi bersih tetap membuka 2 koneksi.
+- Klaim NFR §4 diubah jadi dua bagian: backend Rust + frontend 0 request;
+  runtime WebView2 2 koneksi TLS ke Microsoft. Demo "benar-benar offline" dilakukan
+  dengan adaptor jaringan dimatikan.

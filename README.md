@@ -18,7 +18,9 @@ Dua permukaan:
 ## Prinsip
 
 - **Tanpa admin, tanpa jaringan, tanpa database.** Tidak ada telemetri, tidak ada
-  unduhan, tidak ada layanan latar belakang.
+  unduhan, tidak ada layanan latar belakang. Kode aplikasi tidak membuka koneksi
+  apa pun; runtime WebView2 bawaan Microsoft tetap membuka dua koneksi TLS saat
+  start — terukur di `docs/jaringan.md`.
 - **Tidak ada angka palsu.** Sensor yang gagal ditandai "tidak tersedia", bukan
   diisi 0 °C, dan aplikasi tidak panic.
 - **Status tidak berkedip.** Status baru berubah setelah 3 sampel bertahan
@@ -68,6 +70,7 @@ Alat bantu di `docs/`:
 cargo run --example probe --manifest-path src-tauri/Cargo.toml     # uji provider sensor
 cargo run --example snapshot --manifest-path src-tauri/Cargo.toml  # snapshot JSON
 powershell -NoProfile -ExecutionPolicy Bypass -File docs\soak.ps1 -Minutes 30
+powershell -NoProfile -ExecutionPolicy Bypass -File docs\akurasi.ps1 -LoadThreads 8
 ```
 
 ## Ambang batas status
@@ -91,6 +94,8 @@ terbaca tidak dianggap aman maupun berbahaya.
 | `docs/soak-test.md` | Dua sesi 52 menit: CPU idle 0,02% mesin, working set 34–53 MB, tanpa kebocoran handle |
 | `docs/a11y.md` | Audit aksesibilitas: kontras AA, fokus keyboard, nama aksesibel, landmark |
 | `docs/sensor-probe.md` | Hasil probe tiap provider sensor di mesin uji |
+| `docs/akurasi.md` | Akurasi CPU/RAM/disk vs counter Windows: median selisih 0,3% / 0,2% / 0,1% |
+| `docs/jaringan.md` | Pemakaian jaringan terukur: aplikasi 0 koneksi, runtime WebView2 2 koneksi TLS |
 | `docs/responden.md` | Rancangan instrumen uji responden (tidak dijalankan, lihat D27 di `DESIGN.md`) |
 
 Angka build rilis: binary 4,55 MB, MSI 2,18 MiB, NSIS 1,49 MiB, startup
@@ -106,11 +111,18 @@ Angka build rilis: binary 4,55 MB, MSI 2,18 MiB, NSIS 1,49 MiB, startup
   (`0x80041003`). Aplikasi menandainya "Menunggu data", bukan menebak.
 - Suhu GPU bergantung pada NVML; kartu non-NVIDIA tidak terbaca.
 - Baterai belum didukung (mesin uji desktop).
+- **Angka CPU memakai basis `% Processor Time`**, sama dengan `sysinfo`. Task
+  Manager Windows 11 menampilkan `% Processor Utility` yang memberi bobot turbo,
+  jadi saat CPU di-turbo angka di aplikasi ini tampak lebih rendah. Terhadap basis
+  yang sama selisihnya 0,3% (`docs/akurasi.md`).
+- **Runtime WebView2 membuka dua koneksi TLS ke Microsoft** saat start (di luar
+  kendali konfigurasi Tauri, diukur di `docs/jaringan.md`). Kode aplikasi sendiri
+  tidak melakukan request jaringan.
 - Uji pemahaman ke pengguna awam belum dijalankan, sehingga klaim "lebih mudah
   dipahami daripada angka mentah" belum punya data responden (D27).
 
 ## Dokumen
 
 - `DESIGN.md` — desain lengkap: tujuan, non-goals, arsitektur, ambang batas,
-  rencana pengujian, dan seluruh keputusan (D1–D27).
+  rencana pengujian, dan seluruh keputusan (D1–D29).
 - `AGENTS.md` — konvensi kerja dan riwayat fase pengembangan.

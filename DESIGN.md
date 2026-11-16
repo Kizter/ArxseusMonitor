@@ -52,7 +52,7 @@ Status terjemahan (aman / waspada / bahaya + saran tindakan) membuat pengguna aw
 | Waktu buka | < 2 detik sampai tray siap |
 | Interval update | 2 detik (sysinfo), 5 detik (suhu/WMI); dapat diubah 1/2/5 detik |
 | Hak akses | Tanpa elevasi admin |
-| Jaringan | 0 request |
+| Jaringan | 0 request dari kode aplikasi (backend Rust + frontend). Runtime WebView2 tetap membuka 2 koneksi TLS ke Microsoft saat start — di luar kendali konfigurasi, terukur di `docs/jaringan.md` |
 | Penyimpanan | 1 file settings JSON (`tauri-plugin-store`) |
 | Reliabilitas | Demo 30 menit tanpa crash; sensor hilang tidak menjatuhkan aplikasi |
 | Instance | Single instance (D24) |
@@ -75,6 +75,19 @@ responden dilewati. Yang dilaporkan: black-box (`docs/black-box.md`), soak
 (`docs/soak-test.md`), aksesibilitas (`docs/a11y.md`), dan akurasi vs Task
 Manager. Instrumen uji pemahaman tetap tersedia di `docs/responden.md` bila
 nanti diperlukan.
+
+Catatan kriteria 2 (16 Nov, `docs/akurasi.md`): terhadap counter Windows yang
+jadi basis perhitungan, median selisih **CPU 0,3%** (beban tetap), **RAM 0,2%**,
+**disk 0,1%** — lulus target < 5%. Dua hal yang harus ditulis di laporan:
+
+1. Acuan diotomasi adalah counter Windows, bukan GUI Task Manager. Pada beban
+   yang sama, `% Processor Utility` (basis angka CPU Task Manager) terukur 82,8%
+   saat `% Processor Time` dan aplikasi ~52%. Aplikasi memakai basis `Time` yang
+   sama dengan `sysinfo`; jadi pada CPU yang ter-turbo, angka aplikasi tampak
+   lebih rendah daripada Task Manager karena perbedaan definisi, bukan galat.
+2. Pada idle selisih **relatif** membesar (median 28,1%) karena kedua nilai
+   kecil (5-13%) dan jendela 2 detik tidak identik; selisih absolutnya median
+   2,80 poin. Bukti akurasi CPU karena itu diambil pada beban tetap.
 
 ---
 
@@ -314,6 +327,8 @@ mesin uji karena dibatasi ±60–70%).
 | D25 | `--simulate-missing-temp` mematikan semua provider suhu (LHM, ACPI, NVML) saat runtime, tanpa menulis berkas settings; flag yang dibawa instance kedua juga mengaktifkan mode ini pada instance yang sudah berjalan | Mengubah setelan `temperatureSource` ke `off` | Setelan pengguna tidak boleh berubah karena flag demo. Karena NVML dimatikan seluruhnya, nama GPU juga tidak tampil — itu konsekuensi yang diterima dan dicatat di `docs/black-box.md` |
 | D26 | Nama produk **ArxseusMonitor**: `productName` = `ArxseusMonitor`, `identifier` = `com.arxseus.monitor`, folder settings `%APPDATA%\ArxseusMonitor`, binary `arxseus-monitor.exe` | Tetap `hwmonitor` / `com.hwmonitor.app` | Nama final ditetapkan pemilik proyek (16 Nov) sebelum repo `Kizter/ArxseusMonitor` dipublikasikan. Settings lama di `%APPDATA%\hwmonitor` tidak dimigrasikan karena belum ada pengguna; berkas bukti historis di `docs/` tetap memakai nama lama dan tidak diubah |
 | D27 | Uji responden (SUS + uji pemahaman 13 orang) **tidak dijalankan**; evaluasi memakai black-box, soak test, audit aksesibilitas, dan akurasi vs Task Manager | Menjalankan 8 mahasiswa + 5 keluarga | Keputusan pemilik proyek (16 Nov). Konsekuensi dicatat jujur: kriteria §5 nomor 3 dan 4 tidak punya data. Instrumen tetap disimpan di `docs/responden.md` sebagai rancangan metode, bukan sebagai bukti |
+| D28 | Akurasi dibuktikan terhadap counter Windows `% Processor Time` / `Available MBytes` / `Get-Volume`, bukan GUI Task Manager; basis CPU = `% Processor Time` (sama dengan `sysinfo`) | Membandingkan dengan angka CPU Task Manager apa adanya | GUI tidak bisa diotomasi, dan Task Manager Win11 memakai `% Processor Utility` (berbobot turbo). Pada beban yang sama Utility 82,8% vs Time/aplikasi ~52%; membandingkan keduanya akan terlihat seperti galat padahal beda definisi metrik. Bukti: `docs/akurasi.md` |
+| D29 | NFR "jaringan: 0 request" ditulis dua bagian: backend Rust + frontend 0 request, runtime WebView2 2 koneksi TLS ke Microsoft saat start. `additionalBrowserArgs` tidak dipakai | Menulis "0 request" apa adanya; memaksa flag Chromium | Pengukuran (`docs/jaringan.md`) menunjukkan 8 flag `--disable-*` terpasang tetapi jumlah koneksi tetap 2, dan `--host-resolver-rules` dibuang WebView2. Klaim harus sesuai yang terukur; demo offline dilakukan dengan adaptor jaringan dimatikan |
 
 ---
 
@@ -322,4 +337,6 @@ mesin uji karena dibatasi ±60–70%).
 1. Verifikasi jalur LHM di mesin demo (butuh pemasangan LHM + WMI provider aktif, serta admin sekali saat memasang) — `docs/sensor-probe.md` masih menandainya belum terverifikasi.
 2. Identitas visual selain nama: ikon aplikasi/tray masih memakai ikon bawaan Tauri; belum ada keputusan untuk membuat ikon sendiri.
 3. Publikasi: repo `Kizter/ArxseusMonitor` berisi kode + dokumen bukti; lisensi belum ditentukan.
+4. Angka CPU Task Manager perlu dibaca manual sekali saat demo untuk mengonfirmasi bahwa selisihnya memang karena `% Processor Utility` (bukan `% Processor Time`) — `docs/akurasi.md`.
+5. Koneksi TLS bawaan runtime WebView2 (2 buah ke Microsoft) belum bisa dimatikan dari konfigurasi aplikasi; bila klaim "tanpa jaringan" dituntut mutlak, demo dilakukan dengan adaptor jaringan dimatikan (`docs/jaringan.md`).
 
