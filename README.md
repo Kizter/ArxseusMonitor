@@ -13,7 +13,7 @@ Dua permukaan:
   kartu grafis), panel "Kenapa?" yang menjelaskan alasan status dengan bahasa
   sehari-hari, dan pengaturan bahasa/interval/sumber suhu.
 
-![Jendela aplikasi](docs/img/aplikasi.png)
+![Jendela aplikasi](.)
 
 ## Prinsip
 
