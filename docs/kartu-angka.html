@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Angka mentah</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --canvas: #0d1117;
+        --border: #30363d;
+        --text: #e6edf3;
+        --muted: #8b949e;
+      }
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--text);
+        font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+        padding: 16px;
+        width: 322px;
+      }
+      h1 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 4px;
+      }
+      p.note {
+        color: var(--muted);
+        margin: 0 0 12px;
+      }
+      ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      }
+      li {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      li:last-child {
+        border-bottom: 0;
+      }
+      .label {
+        color: var(--muted);
+      }
+      .value {
+        font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .detail {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Ringkasan angka</h1>
+    <p class="note">Pembanding "angka mentah": nilai sama, tanpa status.</p>
+    <ul id="rows"></ul>
+    <script>
+      // Nilai diambil dari snapshot aplikasi pada kondisi yang sama, lewat
+      // query string. Contoh:
+      //   kartu-angka.html?cpu=8&ram=82&used=13.1&total=15.9&disk=16.7&gputemp=46
+      // Suhu kosong ditampilkan "tidak tersedia" (tanpa angka palsu).
+      const q = new URLSearchParams(location.search);
+      const fmt = (value, digits) =>
+        value.toLocaleString("id-ID", { maximumFractionDigits: digits });
+      const num = (key, fallback, digits) => {
+        const raw = q.get(key);
+        if (raw === null || raw === "") return fallback;
+        const value = Number(raw.replace(",", "."));
+        return Number.isFinite(value) ? fmt(value, digits) : fallback;
+      };
+      const temp = (key) => {
+        const raw = q.get(key);
+        if (raw === null || raw === "") return "tidak tersedia";
+        const value = Number(raw.replace(",", "."));
+        return Number.isFinite(value) ? `${fmt(value, 0)} °C` : "tidak tersedia";
+      };
+
+      const rows = [
+        ["Beban CPU", `${num("cpu", 8, 1)}%`, null],
+        [
+          "Memori (RAM)",
+          `${num("ram", 62, 1)}%`,
+          `${num("used", 9.8, 1)} GB dari ${num("total", 15.9, 1)} GB`,
+        ],
+        [
+          q.get("disklabel") ?? "Ruang penyimpanan",
+          `${num("disk", 16.7, 1)}% tersisa`,
+          null,
+        ],
+        ["Suhu CPU", temp("cputemp"), null],
+        ["Suhu kartu grafis", temp("gputemp"), null],
+      ];
+
+      const list = document.getElementById("rows");
+      for (const [label, value, detail] of rows) {
+        const item = document.createElement("li");
+        const left = document.createElement("span");
+        left.className = "label";
+        left.textContent = label;
+        const right = document.createElement("span");
+        right.className = "value";
+        right.textContent = value;
+        if (detail) {
+          const sub = document.createElement("span");
+          sub.className = "detail";
+          sub.textContent = detail;
+          right.append(sub);
+        }
+        item.append(left, right);
+        list.append(item);
+      }
+    </script>
+  </body>
+</html>
